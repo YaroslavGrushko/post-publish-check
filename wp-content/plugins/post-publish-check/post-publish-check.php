@@ -19,9 +19,37 @@ if( !defined('POST_PUBLISH_CHECK_DIR') ){
 	define('POST_PUBLISH_CHECK_DIR', plugin_dir_path( __FILE__ ));
 }
 class Post_Publish_Check {
+
+    const MIN_LINKS_COUNT = 3;
+
     function __construct(){
-		
+		add_filter('wp_insert_post_data', array($this, "check_post_publish"), 10, 2);
 	}
+
+    function check_post_publish($data, $postarr){
+        if ($data['post_status'] == 'publish' && $postarr['ID']) {
+            $content = $data['post_content'];
+            $links_count = $this->count_links_in_content($content);
+            
+            if ($links_count < self::MIN_LINKS_COUNT){
+                $data['post_status'] = 'draft';
+            }
+        }
+        return $data;
+    }
+
+    function count_links_in_content($content){
+        $count_links = 0;
+        if($content != ''){
+            // regular expression
+            $dom = new DOMDocument;
+            $dom->loadHTML($content);
+            $count_links = $dom->getElementsByTagName('a')->length;
+        }
+        
+        return $count_links;
+    }
+
 }
 
 
